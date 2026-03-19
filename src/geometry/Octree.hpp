@@ -25,6 +25,7 @@ private:
 public:
     Octree(const AABB& worldBounds, int depthLimit);
 
+    // Main Function
     void build(const std::vector<Triangle>& objTriangles);
 
     std::vector<AABB> getFinalVoxels();
