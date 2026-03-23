@@ -1,0 +1,11 @@
+# Build artifacts
+*.o
+
+# Output files
+test/output/*
+
+# Others
+.vscode/
+.idea/
+*.swp
+*.log
