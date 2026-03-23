@@ -19,13 +19,14 @@ private:
     int totalVoxels;
     std::vector<int> nodesFormedPerDepth;
     std::vector<int> nodesPrunedPerDepth;
+    long long nodesProcessed; 
+
     void subdivideRecursive(OctreeNode* node, const std::vector<Triangle>& triangles, int currentDepth);
     void extractVoxelsRecursive(OctreeNode* node, std::vector<AABB>& outVoxels, int currentDepth);
 
 public:
     Octree(const AABB& worldBounds, int depthLimit);
 
-    // Main Function
     void build(const std::vector<Triangle>& objTriangles);
 
     std::vector<AABB> getFinalVoxels();

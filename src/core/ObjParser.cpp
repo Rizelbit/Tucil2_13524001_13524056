@@ -36,10 +36,22 @@ bool ObjParser::parse(const string& filepath, vector<Triangle>& outTriangles, Ve
             outMaxBound.z = max(outMaxBound.z, z);
         } else if (type == "f") {
             int i, j, k;
-            iss >> i >> j >> k;
+            if (!(iss >> i >> j >> k)) {
+                cerr << "Error: Format faces (f) tidak valid pada baris.\n";
+                return false;
+            }
+
+            if (i < 1 || j < 1 || k < 1 || 
+                (size_t)i > tempVertices.size() || (size_t)j > tempVertices.size() || (size_t)k > tempVertices.size()) {
+                cerr << "Error: Index vertex pada (f) di luar batas.\n";
+                return false;
+            }
 
             Triangle tri(tempVertices[i-1], tempVertices[j-1], tempVertices[k-1]);
             outTriangles.push_back(tri);
+        } else if (type != "v" && type != "f" && type != "#" && type != "") {
+             cerr << "Error: Input Tidak Valid. Terdapat format yang tidak sesuai: " << type << "\n";
+             return false;
         }
     }
     return true;

@@ -1,6 +1,8 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -O2 -std=c++17 -Isrc
-LDFLAGS = -lmingw32 -lSDL2main -lSDL2
+
+# Dikosongkan dulu karena belum menggunakan SDL2, tambah -lmingw32 -lSDL2main -lSDL2 jika sudah menggunakan SDL20
+LDFLAGS = 
 
 # Direktori source code
 SRC_DIRS = src src/math src/geometry src/core src/renderer
@@ -9,8 +11,20 @@ SRCS = $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 # Mengubah ekstensi .cpp menjadi .o untuk object files
 OBJS = $(SRCS:.cpp=.o)
 
-# Target executable
-TARGET = bin/voxelizer.exe
+# Deteksi Sistem Operasi (Cross-Platform compatibility)
+ifeq ($(OS),Windows_NT)
+	# Pengaturan untuk Windows
+	TARGET = bin/voxelizer.exe
+	MKDIR = if not exist bin mkdir bin
+	RM = del /S /Q $(subst /,\,$(OBJS)) 2>nul & del /Q bin\voxelizer.exe 2>nul
+	RUN_CMD = $(TARGET)
+else
+	# Pengaturan untuk Linux / MacOS
+	TARGET = bin/voxelizer
+	MKDIR = mkdir -p bin
+	RM = rm -f $(OBJS) $(TARGET)
+	RUN_CMD = ./$(TARGET)
+endif
 
 .PHONY: all clean run
 
@@ -18,7 +32,7 @@ all: $(TARGET)
 
 # Linking
 $(TARGET): $(OBJS)
-	@if not exist bin mkdir bin
+	@$(MKDIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Compiling
@@ -27,9 +41,8 @@ $(TARGET): $(OBJS)
 
 # Membersihkan file kompilasi
 clean:
-	del /S /Q src\*.o
-	del /Q bin\*.exe
+	-@$(RM)
 
-# Menjalankan program
+# Menjalankan program (Hanya untuk testing tanpa argumen)
 run: all
-	$(TARGET)
+	$(RUN_CMD)
