@@ -49,7 +49,7 @@ bool ObjParser::parse(const string& filepath, vector<Triangle>& outTriangles, Ve
 
             Triangle tri(tempVertices[i-1], tempVertices[j-1], tempVertices[k-1]);
             outTriangles.push_back(tri);
-        } else if (type != "v" && type != "f" && type != "#" && type != "") {
+        } else if (type != "v" && type != "f" && type != "#" && type != "" && type != "g" && type != "vn") {
              cerr << "Error: Input Tidak Valid. Terdapat format yang tidak sesuai: " << type << "\n";
              return false;
         }
