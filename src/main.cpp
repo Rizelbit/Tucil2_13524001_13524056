@@ -6,6 +6,7 @@
 #include "geometry/Octree.hpp"
 #include "core/ObjParser.hpp"
 #include "core/ObjWriter.hpp"
+#include "graphics/Viewer.hpp"
 
 using namespace std;
 
@@ -97,6 +98,11 @@ int main (int argc, char* argv[]) {
     cout << "\nKedalaman octree            : " << maxDepth << "\n";
     cout << "Lama waktu program berjalan : " << elapsed.count() << " detik\n";
     cout << "Path file output            : " << outputPath << "\n";
+
+    // Interactive 3D Viewer
+    cout << "\nMembuka 3D Viewer...\n";
+    Viewer viewer(finalVoxels);
+    viewer.run();
 
     return 0;
 }

@@ -1,12 +1,10 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -O2 -std=c++17 -Isrc
 
-# Dikosongkan dulu karena belum menggunakan SDL2, tambah -lmingw32 -lSDL2main -lSDL2 jika sudah menggunakan SDL20
-LDFLAGS = 
+LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 # Direktori source code
-SRC_DIRS = src src/math src/geometry src/core src/renderer
-# Mencari semua file .cpp di dalam direktori-direktori tersebut
+SRC_DIRS = src src/math src/geometry src/core src/graphics
 SRCS = $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 # Mengubah ekstensi .cpp menjadi .o untuk object files
 OBJS = $(SRCS:.cpp=.o)
