@@ -1,5 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "geometry/AABB.hpp"
 #include "graphics/Camera.hpp"
 
@@ -14,6 +15,8 @@ private:
 
     sf::Font font;
     sf::Text statsText;
+    float lightTheta;
+    float lightPhi;
 
     void processEvents();
     void render(float deltaTime);

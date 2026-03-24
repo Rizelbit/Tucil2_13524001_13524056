@@ -1,6 +1,9 @@
 #include "graphics/Viewer.hpp"
+#include <iostream>
+#include <algorithm>
+#include <cmath>
 
-Viewer::Viewer(const std::vector<AABB> &voxels) : voxels(voxels), isDragging(false)
+Viewer::Viewer(const std::vector<AABB> &voxels) : voxels(voxels), isDragging(false), lightTheta(0.785f), lightPhi(0.785f)
 {
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
@@ -50,19 +53,16 @@ Viewer::Viewer(const std::vector<AABB> &voxels) : voxels(voxels), isDragging(fal
     {
         std::cerr << "[Viewer] Font tidak dapat dimuat. UI teks dinonaktifkan.\n";
     }
-
 }
 
 void Viewer::run()
 {
     sf::Clock clock;
-    float deltaTime = 0.016f;
-
     while (window.isOpen())
     {
+        float deltaTime = clock.restart().asSeconds();
         processEvents();
         render(deltaTime);
-        deltaTime = clock.restart().asSeconds();
     }
 }
 
@@ -115,6 +115,20 @@ void Viewer::processEvents()
             camera.zoom(-event.mouseWheelScroll.delta);
         }
     }
+
+    // Dynamic Lighting
+    if (window.hasFocus())
+    {
+        float step = 0.05f;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) lightTheta -= step;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) lightTheta += step;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) lightPhi -= step;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) lightPhi += step;
+
+        const float margin = 0.1f;
+        if (lightPhi < margin) lightPhi = margin;
+        if (lightPhi > 3.14159f - margin) lightPhi = 3.14159f - margin;
+    }
 }
 
 void Viewer::render(float deltaTime)
@@ -129,8 +143,12 @@ void Viewer::render(float deltaTime)
     sf::Color baseColor(255, 128, 0); // Orange
     sf::Vector2u sz = window.getSize();
 
-    // Stage 2: Flat Shading Prep
-    Vector3 lightDir = Vector3(0.5f, -1.0f, 0.5f).normalized();
+    // Stage 2: Flat Shading Prep (Dynamic Light)
+    Vector3 lightDir = Vector3(
+        sinf(lightPhi) * cosf(lightTheta),
+        cosf(lightPhi),
+        sinf(lightPhi) * sinf(lightTheta)
+    ).normalized();
 
     // Stage 3: Painter's Algorithm Prep
     struct ProjectedTriangle {
@@ -159,7 +177,7 @@ void Viewer::render(float deltaTime)
         Vector3 c = voxel.center;
         Vector3 h = voxel.halfExtents;
 
-        // Tampilkan 8 sudut voxel
+        // Project all 8 corners once
         Vector3 corners[8] = {
             c + Vector3(-h.x, -h.y, -h.z), // 0
             c + Vector3(h.x, -h.y, -h.z),  // 1
@@ -171,7 +189,7 @@ void Viewer::render(float deltaTime)
             c + Vector3(-h.x, h.y, h.z)    // 7
         };
 
-        // Hitung koordinat view space untuk Z-sorting
+        // Pre-compute View Space coordinates for Z-sorting
         Vector3 viewSpace[8];
         for (int i = 0; i < 8; ++i) {
             viewSpace[i] = view.multiplyVector(corners[i]);
@@ -181,13 +199,13 @@ void Viewer::render(float deltaTime)
         {
             const Face& face = faces[f];
             
-            // Backface Culling
+            // Stage 1: Backface Culling
             Vector3 faceCenter = c + face.normal * (face.normal.x != 0 ? h.x : (face.normal.y != 0 ? h.y : h.z));
             Vector3 viewDir = faceCenter - camPos;
 
             if (face.normal.dot(viewDir) < 0)
             {
-                // Flat Shading Intensity
+                // Stage 2: Flat Shading Intensity
                 float intensity = std::max(0.2f, face.normal.dot(lightDir * -1.0f));
                 sf::Color faceColor(
                     (sf::Uint8)(baseColor.r * intensity),
@@ -195,31 +213,31 @@ void Viewer::render(float deltaTime)
                     (sf::Uint8)(baseColor.b * intensity)
                 );
 
-                // Tampilkan sudut yang terlihat ke dimensi 2D
+                // Project visible corners to 2D
                 sf::Vector2f p[4];
                 for (int i = 0; i < 4; ++i) {
                     Vector3 v = mvp.multiplyVector(corners[face.indices[i]]);
                     p[i] = sf::Vector2f((v.x + 1.0f) * 0.5f * (float)sz.x, (1.0f - v.y) * 0.5f * (float)sz.y);
                 }
 
-                // Painter's Algorithm
+                // Stage 3: Calculate Average Z for the face (Painter's Algorithm)
                 float avgZ = 0.0f;
                 for (int i = 0; i < 4; ++i) avgZ += viewSpace[face.indices[i]].z;
                 avgZ /= 4.0f;
 
-                // Buat 2 segitiga untuk face
+                // Create 2 triangles for the face
                 trianglesToDraw.push_back({{p[0], p[1], p[2]}, avgZ, faceColor});
                 trianglesToDraw.push_back({{p[0], p[2], p[3]}, avgZ, faceColor});
             }
         }
     }
 
-    // Urutkan segitiga dari belakang ke depan
+    // Stage 3: Sort triangles from back to front (Ascending Z since Z is negative in front)
     std::sort(trianglesToDraw.begin(), trianglesToDraw.end(), [](const ProjectedTriangle& a, const ProjectedTriangle& b) {
         return a.avgZ < b.avgZ;
     });
 
-    // Isi VertexArray dan gambar
+    // Populate VertexArray and Draw
     sf::VertexArray surface(sf::Triangles);
     for (const auto& tri : trianglesToDraw) {
         surface.append(sf::Vertex(tri.points[0], tri.color));
@@ -227,18 +245,18 @@ void Viewer::render(float deltaTime)
         surface.append(sf::Vertex(tri.points[2], tri.color));
     }
 
-    // Gambar segitiga yang sudah terurut
+    // Draw the sorted triangles
     window.draw(surface);
 
     if (font.getInfo().family != "")
     {
         float fps = deltaTime > 0.0f ? 1.0f / deltaTime : 0.0f;
         statsText.setString("FPS: " + std::to_string((int)fps) + "\n" +
-                            "Voxels: " + std::to_string(voxels.size()));
+                            "Voxels: " + std::to_string(voxels.size()) + "\n" +
+                            "Light (ARROWS): T=" + std::to_string((int)(lightTheta * 180 / 3.1415f)) + 
+                            ", P=" + std::to_string((int)(lightPhi * 180 / 3.1415f)));
         window.draw(statsText);
     }
 
     window.display();
 }
-
-
