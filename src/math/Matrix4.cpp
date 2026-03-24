@@ -61,7 +61,7 @@ Matrix4 Matrix4::createPerspective(float fov, float aspect, float near, float fa
 }
 
 Matrix4 Matrix4::createLookAt(const Vector3& eye, const Vector3& target, const Vector3& up) {
-    Vector3 f = (target - eye);
+    Vector3 f = (target - eye); // forward - arah hadap kamera
     float lenF = sqrtf(f.dot(f));
     f = f * (1.0f / lenF);
 
@@ -69,11 +69,11 @@ Matrix4 Matrix4::createLookAt(const Vector3& eye, const Vector3& target, const V
     float lenUp = sqrtf(up.dot(up));
     u_norm = u_norm * (1.0f / lenUp);
 
-    Vector3 s = f.cross(u_norm);
+    Vector3 s = f.cross(u_norm); // right - arah kanan kamera
     float lenS = sqrtf(s.dot(s));
     s = s * (1.0f / lenS);
 
-    Vector3 u = s.cross(f);
+    Vector3 u = s.cross(f); // up - arah atas kamera
 
     Matrix4 res = identity();
     res.m[0][0] = s.x; res.m[0][1] = s.y; res.m[0][2] = s.z;
