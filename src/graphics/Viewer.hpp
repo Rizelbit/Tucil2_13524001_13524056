@@ -15,8 +15,8 @@ private:
 
     sf::Font font;
     sf::Text statsText;
-    float lightTheta;
-    float lightPhi;
+    bool shaderEnabled;
+    sf::Shader shader;
 
     void processEvents();
     void render(float deltaTime);
